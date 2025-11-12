@@ -1,0 +1,139 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f8ff;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+#ecossistema {
+  position: relative;
+  width: 90vw;
+  height: 70vh;
+  border: 2px dashed #a0d2eb;
+  background-color: #e0f2f7;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  overflow: hidden; /* Para as abelhas não saírem */
+}
+
+h1 {
+  text-align: center;
+  color: #ffc107;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+.colmeia {
+  position: absolute;
+  width: 150px;
+  height: 120px;
+  background-color: #ffeb3b;
+  border: 3px solid #ffc107;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0; /* Forma de colmeia */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+}
+
+#colmeia1 {
+  top: 10%;
+  left: 10%;
+}
+
+#colmeia2 {
+  bottom: 10%;
+  right: 10%;
+}
+
+.colmeia h2 {
+  font-size: 1.1em;
+  color: #8b4513;
+  margin-bottom: 5px;
+}
+
+.mel-produzido {
+  font-size: 0.9em;
+  color: #d32f2f;
+  font-weight: bold;
+}
+
+.flor {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background-color: #e91e63; /* Cor da flor */
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(233, 30, 99, 0.7);
+  animation: pulse 2s infinite alternate;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7em;
+  color: white;
+  font-weight: bold;
+}
+
+.flor.sem-nectar {
+  background-color: #bdbdbd; /* Cor quando sem néctar */
+  box-shadow: none;
+  animation: none;
+}
+
+.abelha {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: #ffea00; /* Corpo amarelo */
+  border-radius: 50%;
+  border: 2px solid #000; /* Listras pretas */
+  box-sizing: border-box;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6em;
+  color: #333;
+}
+
+.abelha::before {
+  content: '🐝'; /* Ícone de abelha */
+  position: absolute;
+  font-size: 1.2em;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.abelha.com-nectar {
+  background-color: #8bc34a; /* Verde quando tem néctar */
+}
+
+button {
+  padding: 10px 20px;
+  margin: 0 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4CAF50;
+  color: white;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(1.1); opacity: 0.8; }
+}
