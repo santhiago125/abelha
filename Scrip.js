@@ -14,6 +14,32 @@ document.addEventListener('DOMContentLoaded', () => {
     let florId = 0;
     let simulacaoAtiva = false;
 
+    // --- NOVIDADE: Timer de Renovação ---
+    const TEMPO_RENOVACAO = 6000; // 6 segundos
+
+    function iniciarTimerRemocao(florObj) {
+        // As abelhas não podem mais mirar nesta flor (a lógica de simular já faz isso),
+        // mas o timer garante a remoção física e do array.
+
+        console.log(`Flor ${florObj.element.dataset.id} esgotada. Timer de remoção de ${TEMPO_RENOVACAO / 1000}s iniciado.`);
+
+        setTimeout(() => {
+            // 1. Remoção do DOM (visual)
+            florObj.element.remove();
+
+            // 2. Remoção do array 'flores' (lógica)
+            const idParaRemover = florObj.element.dataset.id;
+            const index = flores.findIndex(f => f.element.dataset.id === idParaRemover);
+            
+            if (index > -1) {
+                flores.splice(index, 1);
+                console.log(`Flor ${idParaRemover} removida após o ciclo de renovação.`);
+            }
+
+        }, TEMPO_RENOVACAO);
+    }
+    // --- FIM NOVIDADE ---
+
     // Função para obter posição aleatória dentro do ecossistema
     function getRandomPosition() {
         const x = Math.random() * (ecossistema.clientWidth - 40) + 20; // Margem para não ficar na borda
@@ -126,7 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     let minDistance = Infinity;
 
                     flores.forEach(flor => {
-                        if (flor.nectar > 0) {
+                        // Importante: Checar se o néctar é maior que 0 e se a flor não está em processo de remoção
+                        if (flor.nectar > 0) { 
                             const dx = flor.x - abelha.x;
                             const dy = flor.y - abelha.y;
                             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -165,6 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (abelha.targetFlor.nectar <= 0) {
                                 abelha.targetFlor.element.classList.add('sem-nectar');
                                 console.log(`Flor ${abelha.targetFlor.element.dataset.id} sem néctar.`);
+                                
+                                // >>> NOVIDADE: Chama a função para iniciar o timer de remoção
+                                iniciarTimerRemocao(abelha.targetFlor);
                             }
                         } else {
                             abelha.targetFlor = null; // Flor esgotada, procurar outra
