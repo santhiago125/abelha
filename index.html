@@ -1,27 +1,899 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="ecossistema">
-  <h1>Beeblom: Ecossistema de Simulação</h1>
-  <div class="colmeia" id="colmeia1">
-    <h2>Colmeia 1</h2>
-    <div class="mel-produzido">Mel: 0</div>
-  </div>
-  <div class="colmeia" id="colmeia2">
-    <h2>Colmeia 2</h2>
-    <div class="mel-produzido">Mel: 0</div>
-  </div>
+    <title>Beeblom: Ecossistema de Simulação (V11 - Dia de 3 Minutos)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Base de Estilização */
+        .ecossistema {
+            width: 100%;
+            height: 60vh;
+            background-color: #e0f2f1; /* Tom suave de azul/verde para o céu */
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 2px dashed #b9d7ea;
+        }
 
-  </div>
-<button id="iniciarSimulacao">Iniciar Simulação</button>
-<button id="adicionarFlor">Adicionar Flor</button>
-<button id="adicionarAbelha">Adicionar Abelha</button>
+        /* Colmeias */
+        .colmeia {
+            position: absolute;
+            width: 150px;
+            height: 100px;
+            background-color: #ffc107; /* Amarelo da colmeia */
+            border-radius: 0 0 75px 75px;
+            border: 5px solid #ff9800;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+        #colmeia1 { top: 10%; left: 5%; }
+        #colmeia2 { bottom: 10%; right: 5%; }
+
+        /* Abelhas */
+        .abelha {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #ffeb3b; /* Amarelo da abelha */
+            border-radius: 50%;
+            border: 2px solid #000;
+            z-index: 20;
+            transition: opacity 0.3s ease-in-out; 
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Efeito de sumir ao entrar na colmeia */
+        .abelha.entering-hive {
+            opacity: 0;
+        }
+
+        /* Efeito de listras pretas (simulação) */
+        .abelha::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            top: 25%;
+            left: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                black,
+                black 3px,
+                transparent 3px,
+                transparent 6px
+            );
+            border-radius: 50%;
+        }
+        .abelha.com-nectar {
+            box-shadow: 0 0 10px 3px #e91e63; /* Cor-de-rosa para néctar */
+        }
+        .abelha:hover {
+            transform: scale(1.3);
+        }
+
+        /* Flores */
+        .flor {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #f44336; /* Flor vermelha */
+            border-radius: 50%;
+            border: 2px solid #880e4f;
+            display: flex;
+            flex-direction: column; /* Para empilhar o valor e o tooltip */
+            justify-content: center;
+            align-items: center;
+            
+            /* Ajuste de Texto Padrão: Mais escuro e legível */
+            color: #333; 
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 15;
+            transition: background-color 0.5s, box-shadow 0.5s;
+        }
+        
+        /* Tooltip de Detalhes da Flor */
+        .flor-tooltip {
+            position: absolute;
+            bottom: 110%; /* Posiciona acima da flor */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.85); /* Fundo escuro semi-transparente */
+            color: #fff; /* Texto branco */
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: normal;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none; /* Não interfere nos eventos de clique/hover */
+            transition: opacity 0.2s ease;
+            z-index: 30;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        /* Mostrar Tooltip ao passar o mouse */
+        .flor:hover .flor-tooltip {
+            opacity: 1;
+        }
+
+        /* Estilo para flor esgotada (cinza) */
+        .flor.sem-nectar {
+            background-color: #9e9e9e; 
+            border-color: #616161;
+            box-shadow: none;
+            color: #333;
+            transition: all 0.5s ease-in-out;
+            cursor: default;
+        }
+        
+        /* Estilo para flor ocupada (borda verde ou algo que indique uso) */
+        .flor.ocupada {
+             border-color: #10b981; 
+             box-shadow: 0 0 5px 2px #34d399;
+        }
+
+        /* Painel de Status/Tempo */
+        .status-panel {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .status-item i {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+        }
+
+        /* Pop-up de Alerta de Evento */
+        .event-popup-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none; /* Inicia oculto */
+            backdrop-filter: blur(5px);
+        }
+        .event-popup-content {
+            background: linear-gradient(145deg, #fff 0%, #f0f4f8 100%);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+            animation: fadeIn 0.3s ease-out;
+            border: 4px solid #f97316; /* Cor de alerta */
+        }
+        .event-popup-timer {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ef4444;
+            margin: 1rem 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 flex flex-col items-center font-sans">
+
+    <!-- Cabeçalho -->
+    <h1 class="text-4xl font-extrabold text-gray-800 mb-6 mt-4">Beeblom: Ecossistema de Simulação</h1>
+
+    <!-- Painel de Status (Dia e Eventos) -->
+    <div id="statusPanel" class="status-panel w-full max-w-4xl mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Tempo -->
+        <div class="status-item flex items-center bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <span id="icone-tempo">📅</span>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Dia de Jogo</p>
+                <p id="diaJogo" class="text-xl font-bold text-blue-700">1</p>
+            </div>
+        </div>
+        <!-- Status Atual -->
+        <div class="status-item flex items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200 col-span-2 md:col-span-1">
+            <span id="icone-status">☀️</span>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Status Climático</p>
+                <p id="statusEventoAtual" class="text-xl font-bold text-yellow-700">Normal</p>
+            </div>
+        </div>
+        <!-- Efeitos do Evento -->
+        <div class="status-item flex items-center bg-red-50 p-3 rounded-lg border border-red-200">
+            <span id="icone-impacto">⚡</span>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Efeito</p>
+                <p id="impactoEvento" class="text-xl font-bold text-red-700">Nenhum</p>
+            </div>
+        </div>
+        <!-- Estatísticas da Colmeia 1 -->
+        <div class="status-item flex items-center bg-green-50 p-3 rounded-lg border border-green-200">
+            <span id="icone-mel1">🍯</span>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Mel Colmeia 1</p>
+                <p id="melColmeia1Display" class="text-xl font-bold text-green-700">0</p>
+            </div>
+        </div>
+        <!-- Estatísticas da Colmeia 2 -->
+        <div class="status-item flex items-center bg-green-50 p-3 rounded-lg border border-green-200">
+            <span id="icone-mel2">🍯</span>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Mel Colmeia 2</p>
+                <p id="melColmeia2Display" class="text-xl font-bold text-green-700">0</p>
+            </div>
+        </div>
+        <!-- Contagem de Abelhas Vivas -->
+        <div class="status-item flex items-center bg-purple-50 p-3 rounded-lg border border-purple-200">
+            <span id="icone-abelhas">🐝</span>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Abelhas Vivas</p>
+                <p id="totalAbelhas" class="text-xl font-bold text-purple-700">0</p>
+            </div>
+        </div>
+        <!-- Contagem de Flores -->
+        <div class="status-item flex items-center bg-pink-50 p-3 rounded-lg border border-pink-200">
+            <span id="icone-flores">🌸</span>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Flores Ativas</p>
+                <p id="totalFlores" class="text-xl font-bold text-pink-700">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container do Ecossistema -->
+    <div id="ecossistema" class="ecossistema w-full max-w-4xl">
+        <div id="colmeia1" class="colmeia">
+            Colmeia 1
+            <span class="mel-produzido">Mel: 0</span>
+        </div>
+        <div id="colmeia2" class="colmeia">
+            Colmeia 2
+            <span class="mel-produzido">Mel: 0</span>
+        </div>
+    </div>
+
+    <!-- Controles -->
+    <div class="flex space-x-4 mt-6">
+        <button id="iniciarSimulacao" class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl shadow-lg transition duration-200 ease-in-out transform hover:scale-105">
+            Iniciar Simulação
+        </button>
+        <button id="adicionarFlor" class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl shadow-lg transition duration-200 ease-in-out transform hover:scale-105">
+            Adicionar Flor
+        </button>
+        <button id="adicionarAbelha" class="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold rounded-xl shadow-lg transition duration-200 ease-in-out transform hover:scale-105">
+            Adicionar Abelha
+        </button>
+    </div>
+
+    <!-- Pop-up de Alerta de Evento (Inicialmente oculto) -->
+    <div id="eventPopupBackdrop" class="event-popup-backdrop">
+        <div id="eventPopupContent" class="event-popup-content">
+            <h2 class="text-3xl font-extrabold text-red-600 mb-2">ALERTA DE EVENTO!</h2>
+            <p id="eventMessage" class="text-xl text-gray-700 mb-4">Um evento está prestes a ocorrer:</p>
+            <p class="text-sm text-gray-500 mb-2">Impacto em:</p>
+            <div id="eventTimer" class="event-popup-timer">02:00</div>
+            <p class="text-base text-gray-600 font-medium italic" id="eventDescription">Prepare-se para o impacto no ecossistema.</p>
+        </div>
+    </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const ecossistema = document.getElementById('ecossistema');
+        const colmeia1 = document.getElementById('colmeia1');
+        const colmeia2 = document.getElementById('colmeia2');
+        const iniciarBtn = document.getElementById('iniciarSimulacao');
+        const adicionarFlorBtn = document.getElementById('adicionarFlor');
+        const adicionarAbelhaBtn = document.getElementById('adicionarAbelha'); 
+
+        // Display Status Elements
+        const diaJogoDisplay = document.getElementById('diaJogo');
+        const statusEventoDisplay = document.getElementById('statusEventoAtual');
+        const impactoEventoDisplay = document.getElementById('impactoEvento');
+        const melColmeia1Display = document.getElementById('melColmeia1Display');
+        const melColmeia2Display = document.getElementById('melColmeia2Display');
+        const totalAbelhasDisplay = document.getElementById('totalAbelhas');
+        const totalFloresDisplay = document.getElementById('totalFlores');
+        
+        // Popup Elements
+        const eventPopupBackdrop = document.getElementById('eventPopupBackdrop');
+        const eventTimerDisplay = document.getElementById('eventTimer');
+        const eventMessageDisplay = document.getElementById('eventMessage');
+        const eventDescriptionDisplay = document.getElementById('eventDescription');
+
+
+        // --- Variáveis de Estado Global e Limites ---
+        const MAX_BEES = 50; 
+        const BEES_TO_KEEP_AFTER_MORTALITY = 3; 
+        const HIVE_ENTRY_TIME = 2000; 
+        
+        // Cooldowns
+        const BEE_ADD_COOLDOWN_MS = 3000; 
+        const FLOWER_ADD_COOLDOWN_MS = 3000; 
+        
+        let isAddingBeeOnCooldown = false; 
+        let isAddingFlowerOnCooldown = false; 
+        
+        let flores = [];
+        let abelhas = [];
+        let melColmeia1 = 0;
+        let melColmeia2 = 0;
+        let abelhaId = 0;
+        let florId = 0;
+        let simulacaoAtiva = false;
+        let lastTimestamp = 0;
+        let eventTimeout = null; 
+        
+        // Variáveis de Tempo e Evento
+        let diaJogo = 1;
+        // ALTERADO: 3 minutos (3 * 60 * 1000 = 180000 milissegundos)
+        const MILISSEGUNDOS_POR_DIA = 3 * 60 * 1000; 
+        const TEMPO_ALERTA_SEGUNDOS = 120; 
+        let tempoDecorridoDia = 0; 
+        let eventoEmAndamento = 'Normal';
+        let impactoAtual = 'Nenhum';
+        
+        // Taxas Base (para serem modificadas pelos eventos)
+        const TAXA_PRODUCAO_MEL_BASE = 10;
+        let taxaMelModificada = 10;
+        
+        // Taxa de Movimento Ajustada
+        const BASE_SPEED_MIN = 0.5;
+        const BASE_SPEED_MAX = 1.5;
+
+
+        // --- Configuração dos Eventos (mantida) ---
+        const EVENTOS = {
+            'Temperatura Quente (Moderada)': {
+                tipo: 'BOM',
+                impacto: 'Aumento de Mel (x1.5)',
+                taxaMel: 1.5,
+                durationDays: 3,
+                massMortality: false,
+                message: 'Temperatura agradável. A colheita de néctar está mais eficiente.',
+            },
+            'Temperatura Muito Baixa': {
+                tipo: 'RUIM',
+                impacto: 'Redução Drástica (x0.2)',
+                taxaMel: 0.2,
+                durationDays: 5,
+                massMortality: false,
+                message: 'Temperaturas congelantes. A atividade das abelhas e a produção de mel caem drasticamente.',
+            },
+            'Invasão de Predadores': {
+                tipo: 'RUIM',
+                impacto: `Perda de ${MAX_BEES - BEES_TO_KEEP_AFTER_MORTALITY} abelhas (Restam 3)`,
+                taxaMel: 1.0,
+                durationDays: 2,
+                massMortality: true, 
+                message: 'Vespas predadoras à vista! O risco de morte em massa é iminente. A colmeia está sob ataque!',
+            },
+            'Rainha não Saudável': {
+                tipo: 'RUIM',
+                impacto: `Perda de ${MAX_BEES - BEES_TO_KEEP_AFTER_MORTALITY} abelhas (Restam 3)`,
+                taxaMel: 0.8,
+                durationDays: 4,
+                massMortality: true,
+                message: 'A rainha está doente. A colmeia está em crise. Há perda de abelhas operárias.',
+            }
+        };
+
+        // --- Funções de Mecânica de Jogo ---
+
+        function getRandomPosition() {
+            const x = Math.random() * (ecossistema.clientWidth - 40) + 20;
+            const y = Math.random() * (ecossistema.clientHeight - 40) + 20;
+            return { x, y };
+        }
+
+        // Cria uma nova flor
+        function criarFlor() {
+            const pos = getRandomPosition();
+            const florDiv = document.createElement('div');
+            florDiv.className = 'flor';
+            florDiv.style.left = `${pos.x}px`;
+            florDiv.style.top = `${pos.y}px`;
+            florDiv.dataset.nectar = 100;
+            florDiv.dataset.id = florId++;
+            
+            // 1. Elemento de valor padrão (nectar)
+            florDiv.innerHTML = `<span class="nectar-value">${florDiv.dataset.nectar}</span>`;
+            
+            // 2. Elemento Tooltip (detalhes ao passar o mouse)
+            const tooltip = document.createElement('span');
+            tooltip.className = 'flor-tooltip';
+            tooltip.textContent = "Néctar: 100 | Ocupada: Não";
+            florDiv.appendChild(tooltip);
+
+            ecossistema.appendChild(florDiv);
+            flores.push({ 
+                element: florDiv, 
+                x: pos.x, 
+                y: pos.y, 
+                nectar: parseInt(florDiv.dataset.nectar),
+                occupiedByBeeId: null 
+            });
+            totalFloresDisplay.textContent = flores.length;
+
+            // NOVO: Atualiza o conteúdo do tooltip na hora do hover/mouseover
+            florDiv.addEventListener('mouseover', () => {
+                const occupiedStatus = flores.find(f => f.element === florDiv)?.occupiedByBeeId !== null ? 'Sim' : 'Não';
+                // Certifica-se de que o tooltip exista antes de atualizar
+                const currentTooltip = florDiv.querySelector('.flor-tooltip');
+                if (currentTooltip) {
+                    currentTooltip.textContent = `Néctar: ${florDiv.dataset.nectar} | Ocupada: ${occupiedStatus}`;
+                }
+            });
+            
+            return true; // Flor criada
+        }
+
+        // Cria uma nova abelha (com limite)
+        function criarAbelha(colmeiaTarget) {
+            if (abelhas.length >= MAX_BEES) {
+                console.log("Limite máximo de abelhas (50) atingido. Não é possível criar mais.");
+                return false; 
+            }
+            
+            const pos = getRandomPosition();
+            const abelhaDiv = document.createElement('div');
+            abelhaDiv.className = 'abelha';
+            abelhaDiv.style.left = `${pos.x}px`;
+            abelhaDiv.style.top = `${pos.y}px`;
+            const currentBeeId = abelhaId++;
+            abelhaDiv.dataset.id = currentBeeId;
+            abelhaDiv.dataset.colmeiaTarget = colmeiaTarget || (currentBeeId % 2 === 0 ? 'colmeia1' : 'colmeia2');
+            abelhaDiv.dataset.hasNectar = 'false';
+            ecossistema.appendChild(abelhaDiv);
+            
+            abelhas.push({
+                element: abelhaDiv,
+                id: currentBeeId,
+                x: pos.x,
+                y: pos.y,
+                targetFlor: null,
+                hasNectar: false,
+                speed: Math.random() * (BASE_SPEED_MAX - BASE_SPEED_MIN) + BASE_SPEED_MIN, 
+                state: 'searching', 
+                zigZagSeed: Math.random() * 2 * Math.PI,
+                isEntering: false 
+            });
+            totalAbelhasDisplay.textContent = abelhas.length;
+            return true; 
+        }
+        
+        // Timer de Renovação de Flores (6 segundos)
+        const TEMPO_RENOVACAO = 6000;
+
+        function iniciarTimerRemocao(florObj) {
+            if (florObj.element.classList.contains('sem-nectar') && !florObj.element.dataset.removing) {
+                florObj.element.dataset.removing = 'true';
+                
+                setTimeout(() => {
+                    florObj.element.remove();
+
+                    const idParaRemover = florObj.element.dataset.id;
+                    const index = flores.findIndex(f => f.element.dataset.id === idParaRemover);
+                    
+                    if (index > -1) {
+                        flores.splice(index, 1);
+                        totalFloresDisplay.textContent = flores.length;
+                    }
+
+                }, TEMPO_RENOVACAO);
+            }
+        }
+
+        function moverAbelha(abelha, targetX, targetY) {
+            const dx = targetX - abelha.x;
+            const dy = targetY - abelha.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance <= abelha.speed) {
+                abelha.x = targetX;
+                abelha.y = targetY;
+                return true; 
+            }
+
+            const angleToTarget = Math.atan2(dy, dx);
+            
+            const oscillation = Math.sin(abelha.zigZagSeed) * 1.5; 
+            abelha.zigZagSeed += 0.1; 
+
+            const perpendicularAngle = angleToTarget + Math.PI / 2;
+
+            const baseMoveX = Math.cos(angleToTarget) * abelha.speed;
+            const baseMoveY = Math.sin(angleToTarget) * abelha.speed;
+
+            const zigZagX = Math.cos(perpendicularAngle) * oscillation;
+            const zigZagY = Math.sin(perpendicularAngle) * oscillation;
+            
+            abelha.x += baseMoveX + zigZagX;
+            abelha.y += baseMoveY + zigZagY;
+
+            abelha.element.style.left = `${abelha.x}px`;
+            abelha.element.style.top = `${abelha.y}px`;
+            return false; 
+        }
+        
+        // Lógica de Eventos Aleatórios (mantida)
+        function sortearEvento() {
+             // Esta função precisa ser implementada se quisermos eventos aleatórios
+             console.log(`Dia ${diaJogo} encerrado. Sortear próximo evento...`);
+             resetarEvento();
+             
+             if (Math.random() < 0.3) { // 30% de chance de evento
+                 const eventKeys = Object.keys(EVENTOS);
+                 const randomKey = eventKeys[Math.floor(Math.random() * eventKeys.length)];
+                 
+                 const evento = EVENTOS[randomKey];
+                 const alertaMessage = `Um evento de "${randomKey}" está se aproximando!`;
+
+                 aplicarImpactoEvento(randomKey);
+                 mostrarAlertaEvento(randomKey, evento.message, evento.tipo);
+
+             } else {
+                 eventoEmAndamento = 'Normal';
+                 impactoAtual = 'Nenhum';
+                 statusEventoDisplay.textContent = 'Normal';
+                 impactoEventoDisplay.textContent = 'Nenhum';
+             }
+        }
+
+        function mostrarAlertaEvento(titulo, mensagem, tipo) {
+            eventMessageDisplay.textContent = titulo;
+            eventDescriptionDisplay.textContent = mensagem;
+            
+            // Define o timer para a duração do alerta
+            let timeLeft = TEMPO_ALERTA_SEGUNDOS;
+            eventTimerDisplay.textContent = `${String(Math.floor(timeLeft / 60)).padStart(2, '0')}:${String(timeLeft % 60).padStart(2, '0')}`;
+            eventPopupBackdrop.style.display = 'flex';
+            
+            let currentType = tipo === 'BOM' ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-500';
+            document.getElementById('eventPopupContent').className = `event-popup-content ${currentType}`;
+
+
+            if (eventTimeout) clearTimeout(eventTimeout);
+            
+            // Inicia a contagem regressiva e esconde o pop-up
+            const countdownInterval = setInterval(() => {
+                timeLeft--;
+                eventTimerDisplay.textContent = `${String(Math.floor(timeLeft / 60)).padStart(2, '0')}:${String(timeLeft % 60).padStart(2, '0')}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    eventPopupBackdrop.style.display = 'none';
+                }
+            }, 1000);
+            
+            eventTimeout = setTimeout(() => {
+                eventPopupBackdrop.style.display = 'none';
+            }, TEMPO_ALERTA_SEGUNDOS * 1000);
+        }
+
+        function aplicarImpactoEvento(eventoKey) {
+            const evento = EVENTOS[eventoKey];
+            eventoEmAndamento = eventoKey;
+            impactoAtual = evento.impacto;
+            taxaMelModificada = TAXA_PRODUCAO_MEL_BASE * evento.taxaMel;
+
+            statusEventoDisplay.textContent = eventoKey;
+            impactoEventoDisplay.textContent = evento.impacto;
+
+            if (evento.massMortality) {
+                // Remove abelhas até o limite
+                while (abelhas.length > BEES_TO_KEEP_AFTER_MORTALITY) {
+                    const bee = abelhas.pop();
+                    bee.element.remove();
+                }
+                totalAbelhasDisplay.textContent = abelhas.length;
+            }
+        }
+        
+        function resetarEvento() {
+            if (eventTimeout) clearTimeout(eventTimeout);
+            taxaMelModificada = TAXA_PRODUCAO_MEL_BASE;
+            eventoEmAndamento = 'Normal';
+            impactoAtual = 'Nenhum';
+            statusEventoDisplay.textContent = 'Normal';
+            impactoEventoDisplay.textContent = 'Nenhum';
+        }
+        
+        // --- Função Auxiliar para Coordenadas da Colmeia ---
+        function getColmeiaCoords(colmeiaId) {
+            const targetColmeiaElement = document.getElementById(colmeiaId);
+            const colmeiaRect = targetColmeiaElement.getBoundingClientRect();
+            const ecoRect = ecossistema.getBoundingClientRect();
+            
+            // Centro da colmeia
+            const colmeiaX = colmeiaRect.left + colmeiaRect.width / 2 - ecoRect.left;
+            const colmeiaY = colmeiaRect.top + colmeiaRect.height / 2 - ecoRect.top;
+            return { colmeiaX, colmeiaY };
+        }
+
+
+        // Lógica principal da simulação
+        function simular(timestamp) {
+            if (!simulacaoAtiva) {
+                lastTimestamp = timestamp;
+                requestAnimationFrame(simular);
+                return;
+            }
+
+            const deltaTime = timestamp - lastTimestamp;
+            lastTimestamp = timestamp;
+
+            // --- Lógica de Tempo e Eventos ---
+            tempoDecorridoDia += deltaTime;
+
+            if (tempoDecorridoDia >= MILISSEGUNDOS_POR_DIA) {
+                diaJogo++;
+                tempoDecorridoDia = 0;
+                diaJogoDisplay.textContent = diaJogo;
+                sortearEvento();
+            }
+            // --- FIM Lógica de Tempo e Eventos ---
+
+
+            // --- Lógica de Coleta e Movimento das Abelhas (IA Aprimorada) ---
+            abelhas.forEach(abelha => {
+                
+                if (abelha.isEntering) {
+                    return; 
+                }
+                
+                const { colmeiaX, colmeiaY } = getColmeiaCoords(abelha.element.dataset.colmeiaTarget);
+                
+                // 1. === ESTADO DE ESPERA (WAITING) ===
+                if (abelha.state === 'waiting') {
+                    const availableFlower = flores.find(f => f.nectar > 0 && f.occupiedByBeeId === null);
+                    
+                    if (availableFlower) {
+                        abelha.targetFlor = availableFlower;
+                        availableFlower.occupiedByBeeId = abelha.id; 
+                        availableFlower.element.classList.add('ocupada');
+                        abelha.state = 'collecting';
+                    } else {
+                        // Movimento de espera em zig-zag na entrada da colmeia
+                        const waitX = colmeiaX + Math.sin(abelha.zigZagSeed * 0.2) * 15;
+                        const waitY = colmeiaY + Math.cos(abelha.zigZagSeed * 0.2) * 15;
+                        moverAbelha(abelha, waitX, waitY);
+                        return;
+                    }
+                }
+
+                // 2. === ESTADO DE RETORNO (Com Néctar ou Para Esperar) ===
+                if (abelha.hasNectar || abelha.state === 'returning_to_wait') {
+                    if (moverAbelha(abelha, colmeiaX, colmeiaY)) {
+                        // Chegou à colmeia
+
+                        // *NOVA IMPLEMENTAÇÃO DE ENTRADA NA COLMEIA*
+                        abelha.isEntering = true;
+                        abelha.element.classList.add('entering-hive'); 
+
+                        setTimeout(() => {
+                            abelha.isEntering = false;
+                            abelha.element.classList.remove('entering-hive');
+                            
+                            // CORREÇÃO: Adiciona um pequeno offset aleatório para evitar que as abelhas fiquem empilhadas (bug de acúmulo).
+                            const offset = Math.random() * 20 - 10; // Valor entre -10 e +10
+                            abelha.x = colmeiaX + offset;
+                            abelha.y = colmeiaY + offset;
+                            abelha.element.style.left = `${abelha.x}px`;
+                            abelha.element.style.top = `${abelha.y}px`;
+
+
+                            if (abelha.hasNectar) {
+                                // Entrega do néctar
+                                abelha.hasNectar = false;
+                                abelha.element.classList.remove('com-nectar');
+                                
+                                const melProduzido = taxaMelModificada; 
+                                if (abelha.element.dataset.colmeiaTarget === 'colmeia1') {
+                                    melColmeia1 += melProduzido;
+                                    colmeia1.querySelector('.mel-produzido').textContent = `Mel: ${Math.floor(melColmeia1)}`;
+                                    melColmeia1Display.textContent = Math.floor(melColmeia1);
+                                } else {
+                                    melColmeia2 += melProduzido;
+                                    colmeia2.querySelector('.mel-produzido').textContent = `Mel: ${Math.floor(melColmeia2)}`;
+                                    melColmeia2Display.textContent = Math.floor(melColmeia2);
+                                }
+                                abelha.state = 'searching'; 
+                            } else if (abelha.state === 'returning_to_wait') {
+                                // Entra em estado de espera
+                                abelha.state = 'waiting'; 
+                            }
+                            abelha.targetFlor = null;
+
+                        }, HIVE_ENTRY_TIME); // 2000ms de "processamento"
+                    }
+                    return;
+                } 
+                
+                // 3. === ESTADO DE BUSCA E COLETA ===
+                if (abelha.state === 'searching' || abelha.state === 'collecting') {
+                    
+                    if (abelha.targetFlor && (abelha.targetFlor.nectar <= 0 || (abelha.targetFlor.occupiedByBeeId !== abelha.id && abelha.targetFlor.occupiedByBeeId !== null))) {
+                        if (abelha.targetFlor.occupiedByBeeId === abelha.id) {
+                            abelha.targetFlor.occupiedByBeeId = null; 
+                            abelha.targetFlor.element.classList.remove('ocupada');
+                        }
+                        abelha.targetFlor = null; 
+                        abelha.state = 'searching';
+                    }
+
+                    if (!abelha.targetFlor) {
+                        let closestFlor = null;
+                        let minDistance = Infinity;
+
+                        const availableFlores = flores.filter(f => f.nectar > 0 && f.occupiedByBeeId === null);
+
+                        if (availableFlores.length > 0) {
+                            availableFlores.forEach(flor => {
+                                const distance = Math.sqrt(Math.pow(flor.x - abelha.x, 2) + Math.pow(flor.y - abelha.y, 2));
+                                if (distance < minDistance) {
+                                    minDistance = distance;
+                                    closestFlor = flor;
+                                }
+                            });
+
+                            if (closestFlor) {
+                                abelha.targetFlor = closestFlor;
+                                closestFlor.occupiedByBeeId = abelha.id; 
+                                closestFlor.element.classList.add('ocupada');
+                                abelha.state = 'collecting';
+                            }
+                        } else {
+                            // Se não houver flores, vai para a colmeia esperar
+                            abelha.state = 'returning_to_wait';
+                            return;
+                        }
+                    }
+
+                    if (abelha.targetFlor && abelha.state === 'collecting') {
+                        if (moverAbelha(abelha, abelha.targetFlor.x, abelha.targetFlor.y)) {
+                            if (abelha.targetFlor.nectar > 0) {
+                                abelha.targetFlor.nectar -= 10;
+                                abelha.targetFlor.element.dataset.nectar = abelha.targetFlor.nectar;
+                                
+                                // ATUALIZAÇÃO DO NOVO ELEMENTO SPAN DE VALOR
+                                abelha.targetFlor.element.querySelector('.nectar-value').textContent = abelha.targetFlor.nectar;
+                                
+                                abelha.hasNectar = true;
+                                abelha.element.classList.add('com-nectar');
+                                
+                                abelha.targetFlor.occupiedByBeeId = null; 
+                                abelha.targetFlor.element.classList.remove('ocupada');
+
+                                abelha.state = 'returning'; 
+                            
+                                if (abelha.targetFlor.nectar <= 0) {
+                                    abelha.targetFlor.element.classList.add('sem-nectar');
+                                    iniciarTimerRemocao(abelha.targetFlor);
+                                }
+                            } else {
+                                abelha.targetFlor.occupiedByBeeId = null; 
+                                abelha.targetFlor.element.classList.remove('ocupada');
+                                abelha.targetFlor = null;
+                                abelha.state = 'searching';
+                            }
+                        }
+                    }
+                }
+            });
+            // --- FIM Lógica de Coleta e Movimento das Abelhas ---
+
+            // --- Atualização do Display (Contadores) ---
+            totalAbelhasDisplay.textContent = abelhas.length;
+            totalFloresDisplay.textContent = flores.length;
+            // --- FIM Atualização do Display ---
+
+
+            requestAnimationFrame(simular); // Loop de animação
+        }
+
+        // --- Event Listeners dos Botões ---
+        iniciarBtn.addEventListener('click', () => {
+            simulacaoAtiva = !simulacaoAtiva;
+            iniciarBtn.textContent = simulacaoAtiva ? 'Pausar Simulação' : 'Iniciar Simulação';
+            if (simulacaoAtiva) {
+                lastTimestamp = performance.now();
+                requestAnimationFrame(simular);
+            } else {
+                if (eventTimeout) clearTimeout(eventTimeout); 
+            }
+        });
+
+        // Cooldown no botão Adicionar Flor
+        adicionarFlorBtn.addEventListener('click', () => {
+            if (isAddingFlowerOnCooldown) {
+                return; 
+            }
+            
+            if (criarFlor()) {
+                // Iniciar Cooldown
+                isAddingFlowerOnCooldown = true;
+                adicionarFlorBtn.disabled = true;
+                
+                let cooldownTimer = Math.ceil(FLOWER_ADD_COOLDOWN_MS / 1000);
+                adicionarFlorBtn.textContent = `Aguarde (${cooldownTimer}s)`;
+
+                const countdownInterval = setInterval(() => {
+                    cooldownTimer--;
+                    adicionarFlorBtn.textContent = `Aguarde (${cooldownTimer}s)`;
+
+                    if (cooldownTimer <= 0) {
+                        clearInterval(countdownInterval);
+                        isAddingFlowerOnCooldown = false;
+                        adicionarFlorBtn.disabled = false;
+                        adicionarFlorBtn.textContent = 'Adicionar Flor';
+                    }
+                }, 1000); 
+            }
+        });
+        
+        // Cooldown no botão Adicionar Abelha
+        adicionarAbelhaBtn.addEventListener('click', () => {
+            if (isAddingBeeOnCooldown) {
+                return; 
+            }
+            
+            // Tenta criar a abelha
+            if (criarAbelha()) {
+                // Iniciar Cooldown se a abelha foi criada com sucesso
+                isAddingBeeOnCooldown = true;
+                adicionarAbelhaBtn.disabled = true;
+                
+                let cooldownTimer = Math.ceil(BEE_ADD_COOLDOWN_MS / 1000);
+                adicionarAbelhaBtn.textContent = `Aguarde (${cooldownTimer}s)`;
+
+                const countdownInterval = setInterval(() => {
+                    cooldownTimer--;
+                    adicionarAbelhaBtn.textContent = `Aguarde (${cooldownTimer}s)`;
+
+                    if (cooldownTimer <= 0) {
+                        clearInterval(countdownInterval);
+                        isAddingBeeOnCooldown = false;
+                        adicionarAbelhaBtn.disabled = false;
+                        adicionarAbelhaBtn.textContent = 'Adicionar Abelha';
+                    }
+                }, 1000); 
+            }
+        });
+
+        // --- Inicialização ---
+        for (let i = 0; i < 5; i++) {
+            criarFlor();
+        }
+        for (let i = 0; i < 2; i++) { 
+            criarAbelha(i % 2 === 0 ? 'colmeia1' : 'colmeia2');
+        }
+        totalAbelhasDisplay.textContent = abelhas.length;
+        totalFloresDisplay.textContent = flores.length;
+    });
+</script>
 </body>
 </html>
-<script src="/Scrip.js"></script>
