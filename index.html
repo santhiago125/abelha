@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beeblom: Ecossistema de Simulação (V14 - Evento Rainha)</title>
+    <title>Beeblom: Ecossistema de Simulação (V19 - Guerra Civil)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Base de Estilização */
         .ecossistema {
@@ -42,13 +43,12 @@
             font-size: 1.5rem;
             margin-top: 5px;
         }
-
-        /* Abelhas */
-        .abelha {
+        
+        /* --- ESTILOS DE ABELHA --- */
+        .bee-base {
             position: absolute;
             width: 20px;
             height: 20px;
-            background-color: #ffeb3b; /* Amarelo da abelha */
             border-radius: 50%;
             border: 2px solid #000;
             z-index: 20;
@@ -57,12 +57,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
-        }
-        /* Efeito de sumir ao entrar na colmeia */
-        .abelha.entering-hive {
-            opacity: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
 
+        /* Abelhas Originais (Amarelas) */
+        .abelha {
+            background-color: #ffeb3b; /* Amarelo da abelha */
+        }
         /* Efeito de listras pretas (simulação) */
         .abelha::before {
             content: '';
@@ -80,12 +81,62 @@
             );
             border-radius: 50%;
         }
+        
+        /* Abelhas Invasoras (Vermelhas) */
+        .abelha-invasora {
+            background-color: #f44336; /* Vermelho forte */
+            border-color: #b71c1c; /* Borda mais escura */
+            transform: rotate(45deg); /* Para diferenciar visualmente */
+        }
+        .abelha-invasora::before {
+             content: 'X';
+             color: white;
+             font-weight: bold;
+             font-size: 0.75rem;
+             line-height: 1;
+        }
+        
+        /* Abelhas em Guerra Civil (Amarelas com Borda Vermelha) */
+        .abelha.em-guerra {
+            border-color: #b71c1c; /* Borda Vermelha forte para indicar hostilidade */
+            box-shadow: 0 0 8px 2px rgba(244, 67, 54, 0.7); /* Sombra vermelha */
+        }
+
         .abelha.com-nectar {
             box-shadow: 0 0 10px 3px #e91e63; /* Cor-de-rosa para néctar */
         }
-        .abelha:hover {
+        .abelha:hover, .abelha-invasora:hover {
             transform: scale(1.3);
         }
+        
+        /* Efeito de sumir ao entrar na colmeia */
+        .abelha.entering-hive {
+            opacity: 0;
+        }
+        
+        /* --- BARRA DE VIDA (HP BAR) --- */
+        .hp-bar-container {
+            position: absolute;
+            top: -8px; /* Posiciona acima da abelha */
+            left: -5px;
+            width: 30px; 
+            height: 3px;
+            background-color: #e0e0e0;
+            border-radius: 1px;
+            overflow: hidden;
+        }
+        .hp-bar {
+            height: 100%;
+            background-color: #4caf50; /* Verde */
+            transition: width 0.3s ease;
+        }
+        .abelha-invasora .hp-bar {
+            background-color: #f44336; /* Vermelho */
+        }
+        .abelha.em-guerra .hp-bar {
+            background-color: #f59e0b; /* Laranja/Amarelo de Alerta */
+        }
+        /* --- FIM BARRA DE VIDA --- */
 
         /* Flores */
         .flor {
@@ -96,11 +147,9 @@
             border-radius: 50%;
             border: 2px solid #880e4f;
             display: flex;
-            flex-direction: column; /* Para empilhar o valor e o tooltip */
+            flex-direction: column; 
             justify-content: center;
             align-items: center;
-            
-            /* Ajuste de Texto Padrão: Mais escuro e legível */
             color: #333; 
             font-size: 10px;
             font-weight: bold;
@@ -112,18 +161,18 @@
         /* Tooltip de Detalhes da Flor */
         .flor-tooltip {
             position: absolute;
-            bottom: 110%; /* Posiciona acima da flor */
+            bottom: 110%; 
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.85); /* Fundo escuro semi-transparente */
-            color: #fff; /* Texto branco */
+            background-color: rgba(0, 0, 0, 0.85); 
+            color: #fff; 
             padding: 4px 8px;
             border-radius: 6px;
             font-size: 10px;
             font-weight: normal;
             white-space: nowrap;
             opacity: 0;
-            pointer-events: none; /* Não interfere nos eventos de clique/hover */
+            pointer-events: none; 
             transition: opacity 0.2s ease;
             z-index: 30;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -163,41 +212,25 @@
             margin-right: 0.5rem;
         }
 
-        /* Pop-up de Alerta de Evento */
-        .event-popup-backdrop {
+        /* Alerta Não-Bloqueante Flutuante */
+        #floatingAlert {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
+            top: 1rem;
+            right: 1rem;
+            background-color: #fefcbf; /* Amarelo Suave */
+            border: 3px solid #f59e0b; /* Laranja de Alerta */
+            color: #92400e; /* Marrom Escuro */
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 999; 
+            max-width: 300px;
             display: none; /* Inicia oculto */
-            backdrop-filter: blur(5px);
+            animation: slideIn 0.5s ease-out;
         }
-        .event-popup-content {
-            background: linear-gradient(145deg, #fff 0%, #f0f4f8 100%);
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            width: 90%;
-            max-width: 500px;
-            animation: fadeIn 0.3s ease-out;
-            border: 4px solid #f97316; /* Cor de alerta */
-        }
-        .event-popup-timer {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #ef4444;
-            margin: 1rem 0;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+        @keyframes slideIn {
+            from { right: -320px; opacity: 0; }
+            to { right: 1rem; opacity: 1; }
         }
 
     </style>
@@ -206,61 +239,75 @@
 
     <h1 class="text-4xl font-extrabold text-gray-800 mb-6 mt-4">Beeblom: Ecossistema de Simulação</h1>
 
-    <div id="statusPanel" class="status-panel w-full max-w-4xl mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div id="statusPanel" class="status-panel w-full max-w-4xl mb-6 grid grid-cols-2 md:grid-cols-5 gap-4">
         <div class="status-item flex items-center bg-blue-50 p-3 rounded-lg border border-blue-200">
-            <span id="icone-tempo">📅</span>
+            <i class="fas fa-calendar-day text-blue-500"></i>
             <div>
                 <p class="text-sm font-medium text-gray-500">Dia de Jogo</p>
                 <p id="diaJogo" class="text-xl font-bold text-blue-700">1</p>
             </div>
         </div>
-        <div class="status-item flex items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200 col-span-2 md:col-span-1">
-            <span id="icone-status">☀️</span>
+        <div class="status-item flex items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+            <i class="fas fa-cloud-sun text-yellow-500"></i>
             <div>
                 <p class="text-sm font-medium text-gray-500">Status Climático</p>
                 <p id="statusEventoAtual" class="text-xl font-bold text-yellow-700">Normal</p>
             </div>
         </div>
         <div class="status-item flex items-center bg-red-50 p-3 rounded-lg border border-red-200">
-            <span id="icone-impacto">⚡</span>
+            <i class="fas fa-exclamation-triangle text-red-500"></i>
             <div>
                 <p class="text-sm font-medium text-gray-500">Efeito</p>
                 <p id="impactoEvento" class="text-xl font-bold text-red-700">Nenhum</p>
             </div>
         </div>
+        <div class="status-item flex items-center bg-indigo-50 p-3 rounded-lg border border-indigo-200">
+            <i class="fas fa-hourglass-half text-indigo-500"></i>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Duração do Evento</p>
+                <p id="eventTimerDisplay" class="text-xl font-bold text-indigo-700">--</p>
+            </div>
+        </div>
+        <div class="status-item flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+            <i class="fas fa-bullseye text-gray-500"></i>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Limite de Abelhas</p>
+                <p id="maxAbelhasDisplay" class="text-xl font-bold text-gray-700">50</p>
+            </div>
+        </div>
         <div class="status-item flex items-center bg-green-50 p-3 rounded-lg border border-green-200">
-            <span id="icone-mel1">🍯</span>
+            <i class="fas fa-flask text-green-500"></i>
             <div>
                 <p class="text-sm font-medium text-gray-500">Mel Colmeia 1</p>
                 <p id="melColmeia1Display" class="text-xl font-bold text-green-700">0</p>
             </div>
         </div>
         <div class="status-item flex items-center bg-green-50 p-3 rounded-lg border border-green-200">
-            <span id="icone-mel2">🍯</span>
+            <i class="fas fa-flask text-green-500"></i>
             <div>
                 <p class="text-sm font-medium text-gray-500">Mel Colmeia 2</p>
                 <p id="melColmeia2Display" class="text-xl font-bold text-green-700">0</p>
             </div>
         </div>
         <div class="status-item flex items-center bg-purple-50 p-3 rounded-lg border border-purple-200">
-            <span id="icone-abelhas">🐝</span>
+            <i class="fas fa-bee text-purple-500"></i>
             <div>
-                <p class="text-sm font-medium text-gray-500">Abelhas Vivas</p>
+                <p class="text-sm font-medium text-gray-500">Abelhas Vivas (Amarelas)</p>
                 <p id="totalAbelhas" class="text-xl font-bold text-purple-700">0</p>
             </div>
         </div>
+        <div class="status-item flex items-center bg-red-50 p-3 rounded-lg border border-red-200">
+            <i class="fas fa-skull text-red-500"></i>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Invasoras (Vermelhas)</p>
+                <p id="totalAbelhasInvasoras" class="text-xl font-bold text-red-700">0</p>
+            </div>
+        </div>
         <div class="status-item flex items-center bg-pink-50 p-3 rounded-lg border border-pink-200">
-            <span id="icone-flores">🌸</span>
+            <i class="fas fa-seedling text-pink-500"></i>
             <div>
                 <p class="text-sm font-medium text-gray-500">Flores Ativas</p>
                 <p id="totalFlores" class="text-xl font-bold text-pink-700">0</p>
-            </div>
-        </div>
-        <div class="status-item flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <span id="icone-limite">🎯</span>
-            <div>
-                <p class="text-sm font-medium text-gray-500">Limite de Abelhas</p>
-                <p id="maxAbelhasDisplay" class="text-xl font-bold text-gray-700">50</p>
             </div>
         </div>
     </div>
@@ -290,22 +337,14 @@
         </button>
     </div>
 
-    <div id="eventPopupBackdrop" class="event-popup-backdrop">
-        <div id="eventPopupContent" class="event-popup-content">
-            <h2 class="text-3xl font-extrabold text-red-600 mb-2">ALERTA DE EVENTO!</h2>
-            <p id="eventMessage" class="text-xl text-gray-700 mb-4">Um evento está prestes a ocorrer:</p>
-            <p class="text-sm text-gray-500 mb-2">Impacto em:</p>
-            <div id="eventTimer" class="event-popup-timer">02:00</div>
-            <p class="text-base text-gray-600 font-medium italic" id="eventDescription">Prepare-se para o impacto no ecossistema.</p>
-        </div>
+    <div id="floatingAlert">
+        <h3 id="alertTitle" class="text-lg font-bold">ALERTA DE EVENTO!</h3>
+        <p id="alertMessage" class="text-sm"></p>
     </div>
-
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const ecossistema = document.getElementById('ecossistema');
-        const colmeia1 = document.getElementById('colmeia1');
-        const colmeia2 = document.getElementById('colmeia2');
         const iniciarBtn = document.getElementById('iniciarSimulacao');
         const adicionarFlorBtn = document.getElementById('adicionarFlor');
         const adicionarAbelhaBtn = document.getElementById('adicionarAbelha'); 
@@ -321,20 +360,26 @@
         const maxAbelhasDisplay = document.getElementById('maxAbelhasDisplay');
         const rainha1StatusDisplay = document.getElementById('rainha1Status');
         const rainha2StatusDisplay = document.getElementById('rainha2Status');
-        
-        // Popup Elements
-        const eventPopupBackdrop = document.getElementById('eventPopupBackdrop');
-        const eventTimerDisplay = document.getElementById('eventTimer');
-        const eventMessageDisplay = document.getElementById('eventMessage');
-        const eventDescriptionDisplay = document.getElementById('eventDescription');
+        const eventTimerDisplay = document.getElementById('eventTimerDisplay');
+        const totalAbelhasInvasorasDisplay = document.getElementById('totalAbelhasInvasoras');
+
+        // Floating Alert Elements
+        const floatingAlert = document.getElementById('floatingAlert');
+        const alertTitle = document.getElementById('alertTitle');
+        const alertMessage = document.getElementById('alertMessage');
 
 
         // --- Variáveis de Estado Global e Limites ---
         let MAX_BEES = 50; 
-        const MAX_BEES_HEALTHY = 100; // Novo limite para Rainha Saudável
-        const BEES_TO_KEEP_AFTER_PREDATOR = 3; 
-        const BEES_TO_KEEP_AFTER_QUEEN_DEATH = 2; // Novo limite para Guerra Civil
+        const MAX_BEES_HEALTHY = 100;
+        const COMBAT_SURVIVAL_LIMIT_INVASION = 3; // Limite de abelhas amarelas após o combate de INVASÃO
+        const CIVIL_WAR_SURVIVAL_LIMIT = 2; // Limite de abelhas amarelas após o combate de GUERRA CIVIL
+
         const HIVE_ENTRY_TIME = 2000; 
+        const INITIAL_HP = 100;
+        const ATTACK_DAMAGE = 8;
+        const ATTACK_RATE = 500; // 500ms entre ataques
+
         
         // Cooldowns
         const BEE_ADD_COOLDOWN_MS = 3000; 
@@ -344,14 +389,16 @@
         let isAddingFlowerOnCooldown = false; 
         
         let flores = [];
-        let abelhas = [];
+        let abelhas = []; // Abelhas Amarelas (Originais)
+        let abelhasInvasoras = []; // Abelhas Vermelhas (Invasoras)
         let melColmeia1 = 0;
         let melColmeia2 = 0;
         let abelhaId = 0;
         let florId = 0;
-        let simulacaoAtiva = false;
+        let simulacaoIniciada = false; // Novo estado para saber se a simulação foi executada pelo menos uma vez
+        let simulacaoAtiva = false; // Estado de Pausa/Continuação
+        let animationFrameId = null; // ID para controle do requestAnimationFrame
         let lastTimestamp = 0;
-        let eventTimeout = null; 
         
         // Variáveis de Tempo e Evento
         let diaJogo = 1;
@@ -362,68 +409,105 @@
         // Variáveis de Controle de Evento
         let eventoAtivo = null; 
         let tempoFimEvento = 0; 
-        let GAME_SPEED_FACTOR = 1.0; // Fator de velocidade global (para Congelamento)
+        let GAME_SPEED_FACTOR = 1.0; 
+        let countdownInterval = null; 
+        let lastAttackTimestamp = 0;
 
         // Variáveis de Estado da Rainha
-        let rainha1Saude = 'Normal'; // 'Normal', 'Saudável', 'Não Saudável'
+        let rainha1Saude = 'Normal'; 
         let rainha2Saude = 'Normal';
 
         
         // Taxas Base (para serem modificadas pelos eventos)
         const TAXA_PRODUCAO_MEL_BASE = 10;
         
-        // Taxa de Movimento Ajustada
-        const BASE_SPEED_MIN = 0.5;
-        const BASE_SPEED_MAX = 1.5;
-
-        // Limite da Rainha (Inicializado)
-        maxAbelhasDisplay.textContent = MAX_BEES;
+        // CORREÇÃO: Velocidade lenta com zig-zag mantido
+        const BASE_SPEED_MIN = 0.5; // Valor mais baixo para velocidade lenta
+        const BASE_SPEED_MAX = 1.0; // Valor mais baixo para velocidade lenta
 
 
-        // --- Configuração dos Eventos (Incluindo Rainha Não Saudável) ---
-        const DURACAO_EVENTO_SIMPLES_MS = 2 * 60 * 1000; // 2 minutos
-        const DURACAO_EVENTO_PREDADOR_MS = 20 * 60 * 1000; // 20 minutos
-        const DURACAO_EVENTO_RAINHA_MS = 20 * 60 * 1000; // 20 minutos
+        // --- Configuração dos Eventos ---
+        const DURACAO_EVENTO_SIMPLES_MS = 2 * 60 * 1000; 
+        const DURACAO_EVENTO_COMBATE_MS = 20 * 60 * 1000; // 20 minutos
+        const DURACAO_EVENTO_RAINHA_MS = 20 * 60 * 1000; 
 
         const EVENTOS = {
-            // ... (Manter eventos climáticos anteriores)
-            'Solo Muito Seco': { tipo: 'RUIM', impacto: 'Flores (-), Mel (-), Natalidade (-)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 0.7, flowerMultiplier: 0.5, natalidadeMultiplier: 0.7, message: 'A seca diminuiu a produção de néctar e o surgimento de novas flores.', isCongelamento: false, travarAddBee: false, },
-            'Solo Muito Úmido': { tipo: 'RUIM', impacto: 'Flores (-), Mel (-), Natalidade (-)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 0.8, flowerMultiplier: 0.6, natalidadeMultiplier: 0.8, message: 'O excesso de água atrapalha o crescimento das plantas e afeta a colheita.', isCongelamento: false, travarAddBee: false, },
-            'Temperatura Muito Baixa (Congelamento)': { tipo: 'RUIM', impacto: 'CONGELAMENTO: Atividade Zero, Mel (x0), Natalidade (x0)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 0, flowerMultiplier: 0.05, natalidadeMultiplier: 0, message: 'Temperaturas congelantes! As abelhas estão em estagnação e a produção parou.', isCongelamento: true, travarAddBee: false, },
-            'Temperatura Muito Alta (Secagem)': { tipo: 'RUIM', impacto: 'Secagem: Mel (-), Natalidade (-), Flores (-)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 0.6, flowerMultiplier: 0.5, natalidadeMultiplier: 0.6, message: 'Calor intenso e secagem. A atividade de coleta e reprodução é prejudicada.', isCongelamento: false, travarAddBee: false, },
-            'Solo Úmido (Ideal)': { tipo: 'BOM', impacto: 'Flores (++), Mel (x1)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 1.0, flowerMultiplier: 1.5, natalidadeMultiplier: 1.0, message: 'Condições de solo perfeitas. O surgimento de novas flores é acelerado!', isCongelamento: false, travarAddBee: false, },
-            'Temperatura Quente (Moderada)': { tipo: 'BOM', impacto: 'Mel (++), Natalidade (++), Flores (+)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 1.5, flowerMultiplier: 1.2, natalidadeMultiplier: 1.5, message: 'Temperatura agradável. A colheita de néctar e a natalidade estão mais eficientes.', isCongelamento: false, travarAddBee: false, },
-            'Solo Úmido + Temp. Quente': { tipo: 'BOM', impacto: 'Super Bônus: Mel (+++), Natalidade (+++), Flores (+++)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 2.0, flowerMultiplier: 2.0, natalidadeMultiplier: 2.0, message: 'Combinação perfeita de clima e solo! O ecossistema está em pleno auge de produção.', isCongelamento: false, travarAddBee: false, },
-            'Invasão de Predadores': { tipo: 'RUIM', impacto: `Perda de abelhas. Botão de Adicionar travado por 20 minutos. (Sobrevivência: ${BEES_TO_KEEP_AFTER_PREDATOR} abelhas)`, durationMs: DURACAO_EVENTO_PREDADOR_MS, nectarMultiplier: 0.8, flowerMultiplier: 1.0, natalidadeMultiplier: 0.5, massMortality: true, survivalCount: BEES_TO_KEEP_AFTER_PREDATOR, message: 'Vespas predadoras à vista! O risco de morte em massa é iminente. O botão de adicionar abelha foi desativado.', isCongelamento: false, travarAddBee: true, },
-
-            // --- EVENTOS DA NOVA RAINHA ---
-            'Rainha Saudável (Prosperidade)': {
-                tipo: 'ESPECIAL BOM',
-                impacto: `Limite de Abelhas: ${MAX_BEES_HEALTHY}. Bônus de Flores/Abelhas.`,
-                durationMs: DURACAO_EVENTO_RAINHA_MS,
-                nectarMultiplier: 1.0, 
-                flowerMultiplier: 1.0, 
-                natalidadeMultiplier: 1.0, 
-                message: 'Uma nova Rainha saudável chegou! O limite de abelhas aumentou e há um surto de nascimento e floração!',
-                isCongelamento: false,
-                travarAddBee: false,
-            },
-            'Rainha Não Saudável (Guerra Civil)': {
-                tipo: 'ESPECIAL RUIM',
-                impacto: `Guerra Civil. Botão de Adicionar travado por 20 minutos. (Sobrevivência: ${BEES_TO_KEEP_AFTER_QUEEN_DEATH} abelhas)`,
-                durationMs: DURACAO_EVENTO_RAINHA_MS,
+            'Solo Muito Seco': { tipo: 'RUIM', impacto: 'Flores (-), Mel (-), Natalidade (-)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 0.7, flowerMultiplier: 0.5, natalidadeMultiplier: 0.7, message: 'A seca diminuiu a produção de néctar e o surgimento de novas flores.', isCongelamento: false, travarAddBee: false, isCombatEvent: false, isCivilWar: false },
+            'Temperatura Muito Baixa (Congelamento)': { tipo: 'RUIM', impacto: 'CONGELAMENTO: Atividade Zero, Mel (x0), Natalidade (x0)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 0, flowerMultiplier: 0.05, natalidadeMultiplier: 0, message: 'Temperaturas congelantes! As abelhas estão em estagnação e a produção parou.', isCongelamento: true, travarAddBee: false, isCombatEvent: false, isCivilWar: false },
+            'Temperatura Quente (Moderada)': { tipo: 'BOM', impacto: 'Mel (++), Natalidade (++), Flores (+)', durationMs: DURACAO_EVENTO_SIMPLES_MS, nectarMultiplier: 1.5, flowerMultiplier: 1.2, natalidadeMultiplier: 1.5, message: 'Temperatura agradável. A colheita de néctar e a natalidade estão mais eficientes.', isCongelamento: false, travarAddBee: false, isCombatEvent: false, isCivilWar: false },
+            
+            // EVENTO DE INVASÃO
+            'Invasão de Abelhas Predadoras': { 
+                tipo: 'RUIM', 
+                impacto: `COMBATE: Lute até restar ${COMBAT_SURVIVAL_LIMIT_INVASION} abelhas amarelas.`, 
+                durationMs: DURACAO_EVENTO_COMBATE_MS, 
                 nectarMultiplier: 0.5, 
-                flowerMultiplier: 0.5, 
+                flowerMultiplier: 0.8, 
                 natalidadeMultiplier: 0.1, 
-                massMortality: true, 
-                survivalCount: BEES_TO_KEEP_AFTER_QUEEN_DEATH,
-                message: 'A Rainha morreu e a Guerra Civil começou! O botão de adicionar abelha foi desativado.',
-                isCongelamento: false,
+                message: 'Abelhas predadoras (Vermelhas) invadiram! Defenda a colmeia!', 
+                isCongelamento: false, 
                 travarAddBee: true, 
+                isCombatEvent: true,
+                isCivilWar: false, // NÃO é Guerra Civil
+                survivalCount: COMBAT_SURVIVAL_LIMIT_INVASION 
+            },
+
+            // EVENTO DA RAINHA: SAUDÁVEL
+            'Rainha Saudável (Prosperidade)': {
+                tipo: 'ESPECIAL BOM', impacto: `Limite: ${MAX_BEES_HEALTHY}. Bônus de Flores/Abelhas.`, durationMs: DURACAO_EVENTO_RAINHA_MS,
+                nectarMultiplier: 1.0, flowerMultiplier: 1.0, natalidadeMultiplier: 1.0, 
+                message: 'Nova Rainha Saudável (❤️)! Limite de abelhas aumentado e bônus de produção!',
+                isCongelamento: false, travarAddBee: false, isCombatEvent: false, isCivilWar: false
+            },
+            // EVENTO DA RAINHA: GUERRA CIVIL
+            'Rainha Não Saudável (Guerra Civil)': {
+                tipo: 'ESPECIAL RUIM', 
+                impacto: `GUERRA CIVIL: Lute até restar ${CIVIL_WAR_SURVIVAL_LIMIT} abelhas.`, 
+                durationMs: DURACAO_EVENTO_COMBATE_MS, // Usa a mesma duração de combate (20 min)
+                nectarMultiplier: 0.1, 
+                flowerMultiplier: 0.5, 
+                natalidadeMultiplier: 0.0, 
+                message: 'Rainha Morta (💀)! As abelhas entraram em Guerra Civil!',
+                isCongelamento: false, 
+                travarAddBee: true, 
+                isCombatEvent: true, // É um evento de combate
+                isCivilWar: true, // É uma Guerra Civil
+                survivalCount: CIVIL_WAR_SURVIVAL_LIMIT 
+            },
+            // Adicionado o evento "Normal" para fins de sorteio
+            'Normal': {
+                 tipo: 'NEUTRO', impacto: 'Nenhum', durationMs: 0,
+                 nectarMultiplier: 1.0, flowerMultiplier: 1.0, natalidadeMultiplier: 1.0, 
+                 message: 'O ecossistema está estável e em condições normais.',
+                 isCongelamento: false, travarAddBee: false, isCombatEvent: false, isCivilWar: false
             }
         };
 
-        // --- Funções de Mecânica de Jogo ---
+        // --- Funções de Criação e Status ---
+
+        function updateHPBar(element, currentHp, maxHp) {
+            const percentage = Math.max(0, (currentHp / maxHp) * 100);
+            const hpBar = element.querySelector('.hp-bar');
+            if (hpBar) {
+                hpBar.style.width = `${percentage}%`;
+            }
+        }
+        
+        function criarHPBar(isInvader = false) {
+            const container = document.createElement('div');
+            container.className = 'hp-bar-container';
+            const bar = document.createElement('div');
+            bar.className = 'hp-bar';
+            if (isInvader) {
+                bar.classList.add('bg-red-500');
+            } else {
+                bar.classList.add('bg-green-500');
+            }
+            bar.style.width = '100%';
+            container.appendChild(bar);
+            return container;
+        }
+
 
         function getRandomPosition() {
             const x = Math.random() * (ecossistema.clientWidth - 40) + 20;
@@ -431,9 +515,8 @@
             return { x, y };
         }
 
-        // Cria uma nova flor
         function criarFlor() {
-             if (isAddingFlowerOnCooldown && eventoEmAndamento !== 'Rainha Saudável (Prosperidade)') return false;
+             if (isAddingFlowerOnCooldown && !eventoAtivo || eventoAtivo && !eventoAtivo.isCivilWar && eventoAtivo.travarAddBee) return false;
              
             const pos = getRandomPosition();
             const florDiv = document.createElement('div');
@@ -468,30 +551,32 @@
                 }
             });
             
-            return true; 
+            return true;
         }
 
-        // Cria uma nova abelha (com limite)
         function criarAbelha(colmeiaTarget) {
             if (abelhas.length >= MAX_BEES) {
                 console.log(`Limite máximo de abelhas (${MAX_BEES}) atingido. Não é possível criar mais.`);
                 return false; 
             }
-            if (eventoAtivo && eventoAtivo.travarAddBee && !isAddingBeeOnCooldown) {
-                 // Trava a adição manual apenas durante o evento de predadores/guerra civil
+            if (eventoAtivo && eventoAtivo.travarAddBee) {
                  console.log(`Botão de Adicionar Abelha travado devido a ${eventoEmAndamento}.`);
                  return false;
             }
             
             const pos = getRandomPosition();
             const abelhaDiv = document.createElement('div');
-            abelhaDiv.className = 'abelha';
+            abelhaDiv.className = 'abelha bee-base'; 
             abelhaDiv.style.left = `${pos.x}px`;
             abelhaDiv.style.top = `${pos.y}px`;
             const currentBeeId = abelhaId++;
             abelhaDiv.dataset.id = currentBeeId;
             abelhaDiv.dataset.colmeiaTarget = colmeiaTarget || (currentBeeId % 2 === 0 ? 'colmeia1' : 'colmeia2');
             abelhaDiv.dataset.hasNectar = 'false';
+            
+            // Adiciona a barra de vida
+            abelhaDiv.appendChild(criarHPBar(false));
+
             ecossistema.appendChild(abelhaDiv);
             
             abelhas.push({
@@ -500,17 +585,52 @@
                 x: pos.x,
                 y: pos.y,
                 targetFlor: null,
+                targetBee: null, 
                 hasNectar: false,
+                hp: INITIAL_HP, 
+                maxHp: INITIAL_HP,
+                // Usa os novos limites de velocidade lenta
                 speed: Math.random() * (BASE_SPEED_MAX - BASE_SPEED_MIN) + BASE_SPEED_MIN, 
                 state: 'searching', 
                 zigZagSeed: Math.random() * 2 * Math.PI,
-                isEntering: false 
+                isEntering: false,
+                lastAttackTime: 0 // Usado apenas na Guerra Civil
             });
             totalAbelhasDisplay.textContent = abelhas.length;
             return true; 
         }
         
-        // Timer de Renovação de Flores (6 segundos)
+        function criarAbelhaInvasora() {
+             const pos = getRandomPosition();
+            const abelhaDiv = document.createElement('div');
+            abelhaDiv.className = 'abelha-invasora bee-base'; 
+            abelhaDiv.style.left = `${pos.x}px`;
+            abelhaDiv.style.top = `${pos.y}px`;
+            const currentBeeId = abelhaId++; 
+            abelhaDiv.dataset.id = currentBeeId;
+            
+            // Adiciona a barra de vida vermelha
+            abelhaDiv.appendChild(criarHPBar(true));
+
+            ecossistema.appendChild(abelhaDiv);
+            
+            abelhasInvasoras.push({
+                element: abelhaDiv,
+                id: currentBeeId,
+                x: pos.x,
+                y: pos.y,
+                targetBee: null, 
+                hp: INITIAL_HP, 
+                maxHp: INITIAL_HP,
+                // Invasoras um pouco mais rápidas
+                speed: (Math.random() * (BASE_SPEED_MAX - BASE_SPEED_MIN) + BASE_SPEED_MIN) * 1.2, 
+                state: 'fighting', 
+                zigZagSeed: Math.random() * 2 * Math.PI,
+                lastAttackTime: 0
+            });
+             totalAbelhasInvasorasDisplay.textContent = abelhasInvasoras.length;
+        }
+
         const TEMPO_RENOVACAO = 6000;
 
         function iniciarTimerRemocao(florObj) {
@@ -533,7 +653,6 @@
         }
 
         function moverAbelha(abelha, targetX, targetY, currentSpeedFactor) {
-            // A velocidade da abelha é modulada pelo fator de velocidade do jogo (ex: congelamento)
             const currentSpeed = abelha.speed * currentSpeedFactor; 
 
             const dx = targetX - abelha.x;
@@ -547,10 +666,8 @@
             }
 
             const angleToTarget = Math.atan2(dy, dx);
-            
             const oscillation = Math.sin(abelha.zigZagSeed) * 1.5; 
             abelha.zigZagSeed += 0.1; 
-
             const perpendicularAngle = angleToTarget + Math.PI / 2;
 
             const baseMoveX = Math.cos(angleToTarget) * currentSpeed;
@@ -564,112 +681,179 @@
 
             abelha.element.style.left = `${abelha.x}px`;
             abelha.element.style.top = `${abelha.y}px`;
-            return false; 
+            return false;
         }
         
-        // --- Lógica de Eventos Aleatórios ---
         function sortearEvento() {
              resetarEvento();
              
-             if (Math.random() < 0.3) { // 30% de chance de evento climático
-                 const eventKeys = Object.keys(EVENTOS).filter(key => 
-                     key !== 'Rainha Saudável (Prosperidade)' && key !== 'Rainha Não Saudável (Guerra Civil)'
-                 );
-                 const randomKey = eventKeys[Math.floor(Math.random() * eventKeys.length)];
-                 
-                 aplicarImpactoEvento(randomKey);
+             // =======================================================
+             // ALTERAÇÃO SOLICITADA: GARANTIR SORTEIO 100% ALEATÓRIO ENTRE TODOS OS EVENTOS (INCLUINDO 'Normal')
+             // =======================================================
+             const eventKeys = Object.keys(EVENTOS).filter(key => 
+                  !key.includes('Rainha') // Mantenha a exclusão dos eventos da Rainha do sorteio diário (eles têm seu próprio agendamento no Dia 10)
+             );
 
-             } else {
+             const randomKey = eventKeys[Math.floor(Math.random() * eventKeys.length)];
+             
+             if (randomKey === 'Normal') {
+                 // Aplica as propriedades do evento "Normal" (que é um reset)
                  eventoEmAndamento = 'Normal';
                  statusEventoDisplay.textContent = 'Normal';
                  impactoEventoDisplay.textContent = 'Nenhum';
+                 // Não chama aplicarImpactoEvento, pois Normal já é o estado base
+             } else {
+                 aplicarImpactoEvento(randomKey);
              }
         }
 
-        function mostrarAlertaEvento(titulo, mensagem, tipo, durationMs) {
-            eventMessageDisplay.textContent = titulo;
-            eventDescriptionDisplay.textContent = mensagem;
+        // --- Funções de Alerta e Timer ---
+        function mostrarAlertaFlutuante(titulo, mensagem) {
+            alertTitle.textContent = titulo;
+            alertMessage.textContent = mensagem;
+            floatingAlert.style.display = 'block';
+            
+            setTimeout(() => {
+                floatingAlert.style.display = 'none';
+            }, 10000); 
+        }
+        
+        function iniciarCronometro(durationMs) {
+            if (countdownInterval) clearInterval(countdownInterval);
             
             let timeLeft = Math.ceil(durationMs / 1000);
-            eventPopupBackdrop.style.display = 'flex';
             
-            let currentType;
-            if (tipo === 'BOM' || tipo === 'ESPECIAL BOM') {
-                 currentType = 'bg-green-100 border-green-500';
-            } else if (tipo === 'RUIM' || tipo === 'ESPECIAL RUIM') {
-                 currentType = 'bg-red-100 border-red-500';
-            } else {
-                 currentType = 'bg-yellow-100 border-yellow-500';
-            }
-            document.getElementById('eventPopupContent').className = `event-popup-content ${currentType}`;
-
-            if (eventTimeout) clearTimeout(eventTimeout);
-            
-            const countdownInterval = setInterval(() => {
-                timeLeft--;
+            const updateTimer = () => {
                 const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
                 const seconds = String(timeLeft % 60).padStart(2, '0');
                 eventTimerDisplay.textContent = `${minutes}:${seconds}`;
-
+                
                 if (timeLeft <= 0) {
                     clearInterval(countdownInterval);
-                    eventPopupBackdrop.style.display = 'none';
+                    eventTimerDisplay.textContent = 'FIM';
                 }
-            }, 1000);
+                timeLeft--;
+            };
             
-            eventTimeout = setTimeout(() => {
-                eventPopupBackdrop.style.display = 'none';
-            }, durationMs);
+            updateTimer(); 
+            countdownInterval = setInterval(updateTimer, 1000);
         }
+
+        // --- NOVO: Lógica de Combate ---
+        
+        function iniciarEventoGuerraCivil(eventoKey) {
+            const evento = EVENTOS[eventoKey];
+            
+            // 1. Condição de Cancelamento Obrigatória (Regra: <= 2 abelhas)
+            if (abelhas.length <= CIVIL_WAR_SURVIVAL_LIMIT) {
+                 const message = `Iria ocorrer um evento de Guerra Civil, mas devido ao baixo número de abelhas (limite de ${CIVIL_WAR_SURVIVAL_LIMIT} atingido), ele foi cancelado.`;
+                 mostrarAlertaFlutuante("Evento Cancelado", message);
+                 
+                 eventoEmAndamento = 'Normal';
+                 statusEventoDisplay.textContent = 'Normal';
+                 impactoEventoDisplay.textContent = 'Nenhum';
+                 return; 
+            }
+
+            // 2. Aplicação do Impacto
+            eventoAtivo = evento;
+            tempoFimEvento = performance.now() + evento.durationMs; 
+            eventoEmAndamento = eventoKey;
+            statusEventoDisplay.textContent = eventoKey; 
+            impactoEventoDisplay.textContent = evento.impacto;
+
+            mostrarAlertaFlutuante(eventoKey, evento.message);
+            iniciarCronometro(evento.durationMs);
+
+            adicionarAbelhaBtn.disabled = true;
+            adicionarAbelhaBtn.textContent = 'Abelha (Travado)';
+            
+            // Adiciona a classe de Guerra Civil
+            abelhas.forEach(bee => bee.element.classList.add('em-guerra'));
+        }
+
+        function iniciarEventoInvasao(eventoKey) {
+            const evento = EVENTOS[eventoKey];
+            
+            // 1. Condição de Cancelamento Obrigatória (Regra: <= 3 abelhas)
+            if (abelhas.length <= COMBAT_SURVIVAL_LIMIT_INVASION) {
+                 const message = `O evento de invasão iria ocorrer, no entanto, o limite de abelhas permitido é de apenas ${COMBAT_SURVIVAL_LIMIT_INVASION}, por isso ele foi cancelado.`;
+                 mostrarAlertaFlutuante("Evento Cancelado", message);
+                 
+                 eventoEmAndamento = 'Normal';
+                 statusEventoDisplay.textContent = 'Normal';
+                 impactoEventoDisplay.textContent = 'Nenhum';
+                 return; 
+            }
+
+            // 2. Aplicação do Impacto
+            eventoAtivo = evento;
+            tempoFimEvento = performance.now() + evento.durationMs; 
+            eventoEmAndamento = eventoKey;
+            statusEventoDisplay.textContent = eventoKey; 
+            impactoEventoDisplay.textContent = evento.impacto;
+
+            mostrarAlertaFlutuante(eventoKey, evento.message);
+            iniciarCronometro(evento.durationMs);
+
+            adicionarAbelhaBtn.disabled = true;
+            adicionarAbelhaBtn.textContent = 'Abelha (Travado)';
+            
+            // 3. Criação dos Invasores (Invasores = Abelhas Amarelas - Limite de Sobrevivência)
+            const invadersToCreate = abelhas.length - COMBAT_SURVIVAL_LIMIT_INVASION;
+            for(let i = 0; i < Math.max(2, invadersToCreate); i++) { // Garante no mínimo 2 invasores
+                criarAbelhaInvasora();
+            }
+        }
+
 
         function aplicarImpactoEvento(eventoKey) {
             const evento = EVENTOS[eventoKey];
+            
+            if (evento.isCombatEvent) {
+                if (evento.isCivilWar) {
+                    iniciarEventoGuerraCivil(eventoKey);
+                } else {
+                    iniciarEventoInvasao(eventoKey);
+                }
+                return;
+            }
+
             eventoAtivo = evento;
             tempoFimEvento = performance.now() + evento.durationMs; 
             
             eventoEmAndamento = eventoKey;
+            statusEventoDisplay.textContent = eventoKey; 
             impactoEventoDisplay.textContent = evento.impacto;
 
-            // Alerta visual
-            mostrarAlertaEvento(eventoKey, evento.message, evento.tipo, evento.durationMs);
+            mostrarAlertaFlutuante(eventoKey, evento.message);
+            iniciarCronometro(evento.durationMs);
 
-            // Ajusta o fator de velocidade para o congelamento
             GAME_SPEED_FACTOR = evento.isCongelamento ? 0.05 : 1.0; 
             
-            // Trava o botão de adicionar abelha
             if (evento.travarAddBee) {
                 adicionarAbelhaBtn.disabled = true;
                 adicionarAbelhaBtn.textContent = 'Abelha (Travado)';
             }
-
-            // Lógica de Mortalidade em Massa (Predadores ou Guerra Civil)
-            if (evento.massMortality) {
-                // Ao final do evento, a mortalidade em massa é aplicada
-                setTimeout(() => {
-                    if (abelhas.length > evento.survivalCount) {
-                        // Calcula quantas abelhas precisam ser removidas
-                        const toRemove = abelhas.length - evento.survivalCount;
-                        for(let i = 0; i < toRemove; i++) {
-                             const bee = abelhas.pop();
-                             bee.element.remove();
-                        }
-                        totalAbelhasDisplay.textContent = abelhas.length;
-                        console.log(`${eventoKey} terminou. ${toRemove} abelhas removidas. Restam ${abelhas.length}.`);
-                    }
-                    // Garante o destrave do botão no final do evento
-                    resetarEvento(); 
-                }, evento.durationMs);
-            }
         }
         
         function resetarEvento() {
-            if (eventTimeout) clearTimeout(eventTimeout);
-            
+            if (countdownInterval) clearInterval(countdownInterval);
+            eventTimerDisplay.textContent = '--'; 
+
             eventoAtivo = null;
             tempoFimEvento = 0;
             GAME_SPEED_FACTOR = 1.0; 
+            floatingAlert.style.display = 'none'; 
+            
+            // Limpa Invasoras (Se sobraram no final)
+            abelhasInvasoras.forEach(inv => inv.element.remove());
+            abelhasInvasoras = [];
 
-            // Resetar Limite de Abelhas para o padrão (50) ou para o limite da Rainha (100)
+            // Remove a classe de Guerra Civil
+            abelhas.forEach(bee => bee.element.classList.remove('em-guerra'));
+
+            // Resetar Limite de Abelhas 
             if (rainha1Saude === 'Saudável' || rainha2Saude === 'Saudável') {
                  MAX_BEES = MAX_BEES_HEALTHY;
             } else {
@@ -685,16 +869,17 @@
             eventoEmAndamento = 'Normal';
             statusEventoDisplay.textContent = 'Normal';
             impactoEventoDisplay.textContent = 'Nenhum';
+            
+            totalAbelhasInvasorasDisplay.textContent = abelhasInvasoras.length;
         }
         
-        // --- NOVO EVENTO: NOVA RAINHA ---
+        // --- EVENTO: NOVA RAINHA ---
         function iniciarEventoNovaRainha() {
-            // Sorteia a saúde da nova rainha (50/50)
             const isHealthy = Math.random() < 0.5;
             
-            // Assume que o evento afeta ambas as colmeias por simplicidade na IA global
-            rainha1Saude = isHealthy ? 'Saudável' : 'Não Saudável';
-            rainha2Saude = isHealthy ? 'Saudável' : 'Não Saudável';
+            // Define o status da Rainha
+            rainha1Saude = 'Normal'; 
+            rainha2Saude = 'Normal';
 
             rainha1StatusDisplay.textContent = isHealthy ? '❤️' : '💀';
             rainha2StatusDisplay.textContent = isHealthy ? '❤️' : '💀';
@@ -705,39 +890,35 @@
                 eventoKey = 'Rainha Saudável (Prosperidade)';
                 aplicarImpactoEvento(eventoKey);
 
-                // Benefícios da Prosperidade (Sem Cooldown)
                 MAX_BEES = MAX_BEES_HEALTHY;
                 maxAbelhasDisplay.textContent = MAX_BEES;
                 
-                // Aumenta o número de abelhas (5x) e flores (5x) sem cooldown
+                // Bônus
                 for (let i = 0; i < 5; i++) {
                     criarAbelha();
                     criarFlor();
                 }
                 
-                // O botão de adicionar abelha deve ser destravado imediatamente
                 adicionarAbelhaBtn.disabled = false;
                 adicionarAbelhaBtn.textContent = 'Adicionar Abelha'; 
-                // E o cooldown é ignorado (simulando a prosperidade)
                 isAddingBeeOnCooldown = false;
                 isAddingFlowerOnCooldown = false;
 
             } else {
                 eventoKey = 'Rainha Não Saudável (Guerra Civil)';
-                aplicarImpactoEvento(eventoKey);
-                
-                // O limite de MAX_BEES é mantido (50), mas a condição de sobrevivência é 2 abelhas,
-                // imposta pela lógica de massMortality no final do evento.
+                iniciarEventoGuerraCivil(eventoKey); // Chama a função específica com a lógica de cancelamento
             }
             
-            // Após o fim do evento, os status da rainha voltam a ser 'Normal'
-            setTimeout(() => {
-                 rainha1StatusDisplay.textContent = '';
-                 rainha2StatusDisplay.textContent = '';
-                 rainha1Saude = 'Normal';
-                 rainha2Saude = 'Normal';
-                 resetarEvento(); // Garante o reset do MAX_BEES e do botão
-            }, DURACAO_EVENTO_RAINHA_MS);
+            // O reset para a Rainha não Saudável ocorrerá dentro da simular() quando o combate terminar.
+            if (isHealthy) {
+                 setTimeout(() => {
+                    rainha1StatusDisplay.textContent = '';
+                    rainha2StatusDisplay.textContent = '';
+                    rainha1Saude = 'Normal';
+                    rainha2Saude = 'Normal';
+                    resetarEvento(); 
+                 }, DURACAO_EVENTO_RAINHA_MS);
+            }
         }
 
         
@@ -747,20 +928,21 @@
             const colmeiaRect = targetColmeiaElement.getBoundingClientRect();
             const ecoRect = ecossistema.getBoundingClientRect();
             
-            // Centro da colmeia
             const colmeiaX = colmeiaRect.left + colmeiaRect.width / 2 - ecoRect.left;
             const colmeiaY = colmeiaRect.top + colmeiaRect.height / 2 - ecoRect.top;
             return { colmeiaX, colmeiaY };
         }
 
-
         // Lógica principal da simulação
         function simular(timestamp) {
             if (!simulacaoAtiva) {
-                lastTimestamp = timestamp;
-                requestAnimationFrame(simular);
-                return;
+                // Se a simulação for pausada, apenas atualiza o lastTimestamp e retorna para o requestAnimationFrame não ser chamado
+                lastTimestamp = timestamp; 
+                return; // NÃO CHAMAR requestAnimationFrame(simular)
             }
+
+            // Se a simulação estiver ativa, chama o requestAnimationFrame para o próximo frame
+            animationFrameId = requestAnimationFrame(simular);
 
             const deltaTime = timestamp - lastTimestamp;
             lastTimestamp = timestamp;
@@ -773,34 +955,142 @@
                 tempoDecorridoDia = 0;
                 diaJogoDisplay.textContent = diaJogo;
                 
-                // Checagem do Evento Nova Rainha (a cada 10 dias)
                 if (diaJogo % 10 === 0) {
                     iniciarEventoNovaRainha();
                 } else {
-                    sortearEvento(); // Sorteia evento climático nos demais dias
+                    sortearEvento(); 
                 }
             }
-            // --- FIM Lógica de Progressão do Tempo do Dia ---
             
-            // --- Controle de Fim de Evento Climático (não Rainha, pois Rainha tem lógica própria) ---
-            if (eventoAtivo && timestamp > tempoFimEvento && eventoAtivo.durationMs !== DURACAO_EVENTO_RAINHA_MS) {
+            // --- Controle de Fim de Evento (Geral) ---
+            if (eventoAtivo && timestamp > tempoFimEvento && !eventoAtivo.isCombatEvent) {
                 console.log(`Fim do evento: ${eventoEmAndamento}. Resetando para Normal.`);
                 resetarEvento();
             }
 
-            // --- Lógica de Coleta e Movimento das Abelhas (IA Aprimorada) ---
+            // --- Lógica de COMBATE (Se Ativo) ---
+            if (eventoAtivo && eventoAtivo.isCombatEvent) {
+                
+                const isCivilWar = eventoAtivo.isCivilWar;
+                const survivalLimit = eventoAtivo.survivalCount;
+
+                // 1. CHECAGEM DE FIM DE COMBATE
+                if (abelhas.length <= survivalLimit) {
+                    const title = isCivilWar ? "Fim da Guerra Civil (Limite Atingido)" : "Vitória (Pyrrhic)!";
+                    const message = isCivilWar 
+                        ? `A Guerra Civil terminou! Limite de ${survivalLimit} abelhas atingido. Restaram ${abelhas.length} abelhas.`
+                        : `A invasão terminou! Limite de ${survivalLimit} abelhas atingido. Restaram ${abelhas.length} abelhas.`;
+                    mostrarAlertaFlutuante(title, message);
+                    resetarEvento();
+                    return;
+                }
+                
+                if (performance.now() > tempoFimEvento) {
+                    const title = isCivilWar ? "Guerra Civil (Tempo Esgotado)" : "Invasão (Tempo Esgotado)";
+                    const message = isCivilWar 
+                         ? `A Guerra Civil terminou por limite de tempo. Restaram ${abelhas.length} abelhas.`
+                         : `A invasão terminou por limite de tempo. Restaram ${abelhas.length} abelhas.`;
+                    mostrarAlertaFlutuante(title, message);
+                    resetarEvento();
+                    return;
+                }
+
+                // 2. LÓGICA DE ATAQUE E MOVIMENTO
+                if (timestamp - lastAttackTimestamp > ATTACK_RATE) {
+                    
+                    if (isCivilWar) {
+                        // GUERRA CIVIL: Abelhas Amarelas brigam entre si
+                        abelhas.forEach(bee => {
+                            // 2a. Busca/Atribuição de Alvo (Outra Abelha Amarela)
+                            if (!bee.targetBee || bee.targetBee.hp <= 0 || bee.targetBee === bee) {
+                                 // Filtra outras abelhas com HP > 0
+                                 const potentialTargets = abelhas.filter(a => a.id !== bee.id && a.hp > 0); 
+                                 bee.targetBee = potentialTargets.length > 0 ? potentialTargets[Math.floor(Math.random() * potentialTargets.length)] : null;
+                            }
+
+                            // 2b. Ataque e Movimento
+                            if (bee.targetBee) {
+                                const target = bee.targetBee;
+                                if (moverAbelha(bee, target.x, target.y, GAME_SPEED_FACTOR)) {
+                                    // Causa dano e atualiza a barra do alvo
+                                    target.hp = Math.max(0, target.hp - ATTACK_DAMAGE);
+                                    updateHPBar(target.element, target.hp, target.maxHp);
+                                }
+                            }
+                        });
+                        // Nenhuma invasora está envolvida.
+                        
+                    } else {
+                        // INVASÃO PREDADORA: Abelhas Amarelas vs. Invasoras Vermelhas
+                        
+                        // Turno das Abelhas Amarelas (Alvo: Invasoras)
+                        abelhas.forEach(bee => {
+                             if (!bee.targetBee || bee.targetBee.hp <= 0 || !abelhasInvasoras.some(inv => inv.id === bee.targetBee.id)) {
+                                 bee.targetBee = abelhasInvasoras.length > 0 ? abelhasInvasoras[Math.floor(Math.random() * abelhasInvasoras.length)] : null;
+                             }
+
+                             if (bee.targetBee) {
+                                 const target = bee.targetBee;
+                                 if (moverAbelha(bee, target.x, target.y, GAME_SPEED_FACTOR)) {
+                                     target.hp = Math.max(0, target.hp - ATTACK_DAMAGE);
+                                     updateHPBar(target.element, target.hp, target.maxHp);
+                                 }
+                             }
+                        });
+
+                        // Turno das Abelhas Invasoras (Alvo: Abelhas Amarelas)
+                        abelhasInvasoras.forEach(inv => {
+                             if (!inv.targetBee || inv.targetBee.hp <= 0 || !abelhas.some(a => a.id === inv.targetBee.id)) {
+                                 inv.targetBee = abelhas.length > 0 ? abelhas[Math.floor(Math.random() * abelhas.length)] : null;
+                             }
+
+                            if (inv.targetBee) {
+                                const target = inv.targetBee;
+                                if (moverAbelha(inv, target.x, target.y, GAME_SPEED_FACTOR)) {
+                                    target.hp = Math.max(0, target.hp - ATTACK_DAMAGE);
+                                    updateHPBar(target.element, target.hp, target.maxHp);
+                                }
+                            }
+                        });
+                    }
+                    
+                    lastAttackTimestamp = timestamp; 
+
+                    // 3. Limpeza (Remoção dos mortos)
+                    const checkDeath = (list) => {
+                        for (let i = list.length - 1; i >= 0; i--) {
+                            const bee = list[i];
+                            if (bee.hp <= 0) {
+                                bee.element.remove();
+                                list.splice(i, 1);
+                            }
+                        }
+                    };
+                    
+                    checkDeath(abelhas);
+                    if (!isCivilWar) { 
+                        checkDeath(abelhasInvasoras);
+                    }
+                }
+
+                return; // Pula a lógica de coleta
+            }
+            // --- FIM Lógica de COMBATE ---
+
+
+            // --- Lógica de Coleta e Movimento das Abelhas (Normal) ---
             const nectarMult = eventoAtivo ? eventoAtivo.nectarMultiplier : 1.0;
             
             abelhas.forEach(abelha => {
                 
-                if (abelha.isEntering) {
-                    return; 
-                }
+                if (abelha.isEntering) return;
                 
                 const { colmeiaX, colmeiaY } = getColmeiaCoords(abelha.element.dataset.colmeiaTarget);
                 
-                // 1. === ESTADO DE ESPERA (WAITING) ===
+                // Estados de Espera/Retorno/Busca (Lógica de movimento normal)
+                
                 if (abelha.state === 'waiting') {
+                    // Lógica de espera... (inalterada)
                     const availableFlower = flores.find(f => f.nectar > 0 && f.occupiedByBeeId === null);
                     
                     if (availableFlower) {
@@ -816,8 +1106,8 @@
                     }
                 }
 
-                // 2. === ESTADO DE RETORNO (Com Néctar ou Para Esperar) ===
                 if (abelha.hasNectar || abelha.state === 'returning_to_wait') {
+                    // Lógica de retorno à colmeia... (inalterada)
                     if (moverAbelha(abelha, colmeiaX, colmeiaY, GAME_SPEED_FACTOR)) {
                         
                         abelha.isEntering = true;
@@ -839,15 +1129,17 @@
                                 abelha.element.classList.remove('com-nectar');
                                 
                                 const melProduzido = TAXA_PRODUCAO_MEL_BASE * nectarMult; 
+                                
                                 if (abelha.element.dataset.colmeiaTarget === 'colmeia1') {
                                     melColmeia1 += melProduzido;
-                                    colmeia1.querySelector('.mel-produzido').textContent = `Mel: ${Math.floor(melColmeia1)}`;
+                                    document.getElementById('colmeia1').querySelector('.mel-produzido').textContent = `Mel: ${Math.floor(melColmeia1)}`;
                                     melColmeia1Display.textContent = Math.floor(melColmeia1);
                                 } else {
                                     melColmeia2 += melProduzido;
-                                    colmeia2.querySelector('.mel-produzido').textContent = `Mel: ${Math.floor(melColmeia2)}`;
+                                    document.getElementById('colmeia2').querySelector('.mel-produzido').textContent = `Mel: ${Math.floor(melColmeia2)}`;
                                     melColmeia2Display.textContent = Math.floor(melColmeia2);
                                 }
+                                
                                 abelha.state = 'searching'; 
                             } else if (abelha.state === 'returning_to_wait') {
                                 abelha.state = 'waiting'; 
@@ -859,8 +1151,9 @@
                     return;
                 } 
                 
-                // 3. === ESTADO DE BUSCA E COLETA ===
                 if (abelha.state === 'searching' || abelha.state === 'collecting') {
+                    
+                    // Lógica de busca e coleta... (inalterada)
                     
                     if (abelha.targetFlor && (abelha.targetFlor.nectar <= 0 || (abelha.targetFlor.occupiedByBeeId !== abelha.id && abelha.targetFlor.occupiedByBeeId !== null))) {
                         if (abelha.targetFlor.occupiedByBeeId === abelha.id) {
@@ -922,110 +1215,124 @@
                                 abelha.targetFlor.occupiedByBeeId = null; 
                                 abelha.targetFlor.element.classList.remove('ocupada');
                                 abelha.targetFlor = null;
-                                abelha.state = 'searching';
+                                abelha.state = 'searching'; 
                             }
                         }
                     }
                 }
             });
-            // --- FIM Lógica de Coleta e Movimento das Abelhas ---
-
-            // --- Atualização do Display (Contadores) ---
+            
+            // --- Atualização dos Displays ---
             totalAbelhasDisplay.textContent = abelhas.length;
-            totalFloresDisplay.textContent = flores.length;
-            // --- FIM Atualização do Display ---
 
-
-            requestAnimationFrame(simular); // Loop de animação
+            // Se a simulação estiver ativa, a chamada do requestAnimationFrame já foi feita no início da função
         }
 
-        // --- Event Listeners dos Botões ---
+        // --- Inicialização e Listeners ---
         iniciarBtn.addEventListener('click', () => {
-            simulacaoAtiva = !simulacaoAtiva;
-            iniciarBtn.textContent = simulacaoAtiva ? 'Pausar Simulação' : 'Iniciar Simulação';
-            if (simulacaoAtiva) {
-                lastTimestamp = performance.now();
-                requestAnimationFrame(simular);
+            if (!simulacaoIniciada) {
+                // PRIMEIRO INÍCIO
+                simulacaoIniciada = true;
+                simulacaoAtiva = true;
+                iniciarBtn.textContent = 'Pausar Simulação';
+                iniciarBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                iniciarBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+
+                // CRIAÇÃO INICIAL
+                for (let i = 0; i < 5; i++) { 
+                    criarFlor(); 
+                }
+                for (let i = 0; i < 2; i++) { 
+                    criarAbelha(i === 0 ? 'colmeia1' : 'colmeia2'); 
+                }
+
+                // Inicia o loop
+                animationFrameId = requestAnimationFrame(simular);
+
+            } else if (simulacaoAtiva) {
+                // PAUSAR
+                simulacaoAtiva = false;
+                cancelAnimationFrame(animationFrameId); // Para o loop
+                iniciarBtn.textContent = 'Continuar Simulação';
+                iniciarBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                iniciarBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+
             } else {
-                if (eventTimeout) clearTimeout(eventTimeout); 
+                // CONTINUAR
+                simulacaoAtiva = true;
+                iniciarBtn.textContent = 'Pausar Simulação';
+                iniciarBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                iniciarBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                
+                // Reinicia o loop. O `simular` irá chamar requestAnimationFrame novamente
+                animationFrameId = requestAnimationFrame(simular);
             }
         });
 
-        // Cooldown no botão Adicionar Flor - ÚNICO PONTO DE CRIAÇÃO DE FLORES
+        // =======================================================
+        // LÓGICA DE COOLDOWN (Mantida da solicitação anterior)
+        // =======================================================
+
         adicionarFlorBtn.addEventListener('click', () => {
-             // O evento de Rainha Saudável ignora o cooldown
-            if (isAddingFlowerOnCooldown && eventoEmAndamento !== 'Rainha Saudável (Prosperidade)') {
-                return; 
-            }
-            
+            if (isAddingFlowerOnCooldown) return;
             if (criarFlor()) {
-                if (eventoEmAndamento !== 'Rainha Saudável (Prosperidade)') {
-                    // Iniciar Cooldown
-                    isAddingFlowerOnCooldown = true;
-                    adicionarFlorBtn.disabled = true;
-                    
-                    let cooldownTimer = Math.ceil(FLOWER_ADD_COOLDOWN_MS / 1000);
-                    adicionarFlorBtn.textContent = `Aguarde (${cooldownTimer}s)`;
+                isAddingFlowerOnCooldown = true;
+                
+                // Desabilita o botão e muda o texto
+                adicionarFlorBtn.disabled = true;
+                adicionarFlorBtn.textContent = 'Flor (3s)';
 
-                    const countdownInterval = setInterval(() => {
-                        cooldownTimer--;
-                        adicionarFlorBtn.textContent = `Aguarde (${cooldownTimer}s)`;
+                let countdown = 3;
+                adicionarFlorBtn.textContent = `Flor (${countdown}s)`;
+                
+                const timer = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        adicionarFlorBtn.textContent = `Flor (${countdown}s)`;
+                    } else {
+                        clearInterval(timer);
+                        isAddingFlowerOnCooldown = false;
+                        adicionarFlorBtn.disabled = false;
+                        adicionarFlorBtn.textContent = 'Adicionar Flor';
+                    }
+                }, 1000);
+                
+            }
+        });
 
-                        if (cooldownTimer <= 0) {
-                            clearInterval(countdownInterval);
-                            isAddingFlowerOnCooldown = false;
-                            adicionarFlorBtn.disabled = false;
-                            adicionarFlorBtn.textContent = 'Adicionar Flor';
-                        }
-                    }, 1000); 
-                }
+        adicionarAbelhaBtn.addEventListener('click', () => {
+            // Se já estiver em cooldown ou em evento que trava, retorna
+            if (isAddingBeeOnCooldown || (eventoAtivo && eventoAtivo.travarAddBee)) return;
+            
+            if (criarAbelha()) {
+                isAddingBeeOnCooldown = true;
+                
+                // Desabilita o botão e muda o texto
+                adicionarAbelhaBtn.disabled = true;
+                adicionarAbelhaBtn.textContent = 'Abelha (3s)';
+
+                let countdown = 3;
+                adicionarAbelhaBtn.textContent = `Abelha (${countdown}s)`;
+
+                const timer = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        adicionarAbelhaBtn.textContent = `Abelha (${countdown}s)`;
+                    } else {
+                        clearInterval(timer);
+                        isAddingBeeOnCooldown = false;
+                        adicionarAbelhaBtn.disabled = false;
+                        adicionarAbelhaBtn.textContent = 'Adicionar Abelha';
+                    }
+                }, 1000);
             }
         });
         
-        // Cooldown no botão Adicionar Abelha - ÚNICO PONTO DE CRIAÇÃO DE ABELHAS (ALÉM DO INÍCIO)
-        adicionarAbelhaBtn.addEventListener('click', () => {
-             // O evento de Rainha Saudável ignora o cooldown
-            if (isAddingBeeOnCooldown && eventoEmAndamento !== 'Rainha Saudável (Prosperidade)') {
-                return; 
-            }
-            
-            // Tenta criar a abelha
-            if (criarAbelha()) {
-                if (eventoEmAndamento !== 'Rainha Saudável (Prosperidade)') {
-                    // Iniciar Cooldown se a abelha foi criada com sucesso
-                    isAddingBeeOnCooldown = true;
-                    adicionarAbelhaBtn.disabled = true;
-                    
-                    let cooldownTimer = Math.ceil(BEE_ADD_COOLDOWN_MS / 1000);
-                    adicionarAbelhaBtn.textContent = `Aguarde (${cooldownTimer}s)`;
-
-                    const countdownInterval = setInterval(() => {
-                        cooldownTimer--;
-                        adicionarAbelhaBtn.textContent = `Aguarde (${cooldownTimer}s)`;
-
-                        if (cooldownTimer <= 0) {
-                            clearInterval(countdownInterval);
-                            isAddingBeeOnCooldown = false;
-                            adicionarAbelhaBtn.disabled = false;
-                            adicionarAbelhaBtn.textContent = 'Adicionar Abelha';
-                        }
-                    }, 1000); 
-                }
-            }
-        });
-
-        // --- Inicialização (Apenas para começar o jogo com elementos) ---
-        for (let i = 0; i < 5; i++) {
-            criarFlor();
-        }
-        for (let i = 0; i < 2; i++) { 
-            criarAbelha(i % 2 === 0 ? 'colmeia1' : 'colmeia2');
-        }
+        // Inicializa o contador de abelhas
         totalAbelhasDisplay.textContent = abelhas.length;
-        totalFloresDisplay.textContent = flores.length;
+        maxAbelhasDisplay.textContent = MAX_BEES;
+        
     });
 </script>
 </body>
 </html>
-
-
